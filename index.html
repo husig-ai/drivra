@@ -399,6 +399,131 @@
             margin: 0;
             accent-color: var(--primary-red);
         }
+        
+        /* Calendar View Styles */
+        .calendar-view {
+            grid-column: 1 / -1;
+            width: 100%;
+        }
+        
+        .calendar-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .calendar-controls label {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+        
+        .calendar-controls select {
+            padding: 0.5rem;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            background: var(--white);
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+        
+        .calendar-container {
+            overflow-x: auto;
+            background: var(--white);
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.05);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .calendar-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+            margin: 0;
+        }
+        
+        .calendar-table th,
+        .calendar-table td {
+            padding: 12px 8px;
+            text-align: center;
+            border: 1px solid rgba(0,0,0,0.1);
+            font-size: 0.9rem;
+        }
+        
+        .calendar-table th {
+            background: var(--light-gray);
+            font-weight: 700;
+            color: var(--text-dark);
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            min-width: 120px;
+        }
+        
+        .calendar-table th.date-header {
+            background: var(--light-gray);
+            position: static;
+            min-width: 60px;
+        }
+        
+        .calendar-table td.driver-name {
+            background: var(--light-gray);
+            font-weight: 600;
+            text-align: left;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            border-right: 2px solid rgba(0,0,0,0.2);
+        }
+        
+        .calendar-cell {
+            position: relative;
+            font-weight: 600;
+        }
+        
+        .calendar-cell.no-data {
+            background: #f8f9fa;
+            color: #999;
+        }
+        
+        .calendar-cell.low-trips {
+            background: #ffe6e6;
+            color: #d63031;
+        }
+        
+        .calendar-cell.medium-trips {
+            background: #fff3cd;
+            color: #e17055;
+        }
+        
+        .calendar-cell.high-trips {
+            background: #d4edda;
+            color: var(--primary-green);
+        }
+        
+        .calendar-cell.very-high-trips {
+            background: #c8e6c9;
+            color: var(--primary-green);
+            font-weight: 800;
+        }
+        
+        @media (max-width: 768px) {
+            .calendar-table th,
+            .calendar-table td {
+                padding: 6px 4px;
+                font-size: 0.75rem;
+            }
+            
+            .calendar-table th {
+                min-width: 100px;
+            }
+            
+            .calendar-table th.date-header {
+                min-width: 50px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -509,6 +634,21 @@
                 </div>
             </div>
             
+            <!-- Calendar View -->
+            <div class="card calendar-view">
+                <div class="chart-timestamp" id="calendarChartTime"></div>
+                <h3>📅 Driver Performance Matrix - Full Dataset</h3>
+                <div class="calendar-controls">
+                    <label for="calendarSort">Sort drivers by:</label>
+                    <select id="calendarSort">
+                        <option value="alphabetical">Alphabetical</option>
+                        <option value="performance" selected>Total Completed Rides</option>
+                    </select>
+                </div>
+                <p style="color: var(--text-light); margin-bottom: 1.5rem; font-style: italic;">Daily completed trips for each driver (≥25 trips = green) from dataset start to end</p>
+                <div id="calendarView" class="calendar-container"></div>
+            </div>
+            
             <!-- Driver Performance Table -->
             <div class="card">
                 <div class="chart-timestamp" id="driverTableTime"></div>
@@ -593,6 +733,7 @@
                 'hourlyChartTime',
                 'cancellationChartTime',
                 'metricsChartTime',
+                'calendarChartTime',
                 'driverTableTime',
                 'recentRidesTime'
             ];
@@ -616,6 +757,7 @@
             
             // Filter handlers  
             document.getElementById('dateFilter').addEventListener('change', applyFilters);
+            document.getElementById('calendarSort').addEventListener('change', generateCalendarView);
             
             // Multiselect handlers
             document.getElementById('statusFilter').addEventListener('click', () => toggleDropdown('statusDropdown'));
@@ -775,6 +917,15 @@
             return new Date(yearNum, monthNum - 1, dayNum, hourNum, minuteNum, secondNum);
         }
         
+        function parseRevenue(revenueStr) {
+            if (!revenueStr || typeof revenueStr !== 'string') return 0;
+            
+            // Handle comma as decimal separator (European format)
+            const cleaned = revenueStr.replace(',', '.');
+            const parsed = parseFloat(cleaned);
+            return isNaN(parsed) ? 0 : parsed;
+        }
+        
         function handleDragOver(e) {
             e.preventDefault();
             document.querySelector('.header').style.background = 'linear-gradient(135deg, rgba(227, 30, 36, 0.2) 0%, rgba(227, 30, 36, 0.1) 100%)';
@@ -845,8 +996,8 @@
             const statuses = [...new Set(originalData.map(row => row.Status))].filter(Boolean);
             createMultiselect('statusFilter', 'statusDropdown', statuses, selectedStatuses, 'Select Status...');
             
-            // Driver multiselect
-            const drivers = [...new Set(originalData.map(row => row['Driver']))].filter(Boolean);
+            // Driver multiselect - sorted alphabetically
+            const drivers = [...new Set(originalData.map(row => row['Driver']))].filter(Boolean).sort();
             createMultiselect('driverFilter', 'driverDropdown', drivers.slice(0, 20), selectedDrivers, 'Select Drivers...');
         }
         
@@ -906,6 +1057,7 @@
             generateHourlyChart();
             generateCancellationReasons();
             generateKeyMetrics();
+            generateCalendarView();
             generateDriverTable();
             generateRecentRides();
         }
@@ -920,6 +1072,11 @@
                 .filter(r => r.Status === 'Completed')
                 .reduce((sum, r) => sum + parseFloat(r['Mileage, km']?.replace(',', '.') || 0), 0);
             
+            // Revenue calculations
+            const completedRides = filteredData.filter(r => r.Status === 'Completed');
+            const totalRevenue = completedRides.reduce((sum, r) => sum + parseRevenue(r['Fare in Yango Pro']), 0);
+            const avgTicketSize = completed > 0 ? totalRevenue / completed : 0;
+            
             const avgDistance = completed > 0 ? (totalDistance / completed) / 1000 : 0;
             
             const uniqueDrivers = new Set(filteredData.map(r => r['Driver'])).size;
@@ -927,6 +1084,9 @@
             // Format total distance properly
             const totalKm = Math.round(totalDistance / 1000);
             const totalKmDisplay = totalKm >= 1000 ? `${Math.round(totalKm / 1000)}k` : totalKm.toString();
+            
+            // Format revenue
+            const totalRevenueDisplay = totalRevenue >= 100000 ? `${(totalRevenue / 1000).toFixed(0)}k` : totalRevenue.toFixed(0);
             
             const html = `
                 <div class="stat-box">
@@ -944,6 +1104,14 @@
                 <div class="stat-box">
                     <span class="stat-number">${driving.toLocaleString()}</span>
                     <div class="stat-label">In Progress</div>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-number">NPR ${totalRevenueDisplay}</span>
+                    <div class="stat-label">Total Revenue</div>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-number">NPR ${avgTicketSize.toFixed(0)}</span>
+                    <div class="stat-label">Avg Ticket Size</div>
                 </div>
                 <div class="stat-box">
                     <span class="stat-number">${totalKmDisplay}</span>
@@ -1369,6 +1537,19 @@
             const completionRate = filteredData.length > 0 ? 
                 ((completed.length / filteredData.length) * 100).toFixed(1) : 0;
             
+            // Revenue calculations
+            const totalRevenue = completed.reduce((sum, r) => sum + parseRevenue(r['Fare in Yango Pro']), 0);
+            const avgTicketSize = completed.length > 0 ? totalRevenue / completed.length : 0;
+            const revenuePerDriver = (() => {
+                const driverRevenue = {};
+                completed.forEach(r => {
+                    const driver = r['Driver'] || 'Unknown';
+                    driverRevenue[driver] = (driverRevenue[driver] || 0) + parseRevenue(r['Fare in Yango Pro']);
+                });
+                const revenues = Object.values(driverRevenue);
+                return revenues.length > 0 ? revenues.reduce((a, b) => a + b, 0) / revenues.length : 0;
+            })();
+            
             const avgDistance = completed.length > 0 ? 
                 completed.reduce((sum, r) => sum + parseFloat(r['Mileage, km']?.replace(',', '.') || 0), 0) / completed.length / 1000 : 0;
             
@@ -1409,6 +1590,18 @@
                     <span class="metric-value">${completionRate}%</span>
                 </div>
                 <div class="metric">
+                    <span>Total Revenue</span>
+                    <span class="metric-value">NPR ${totalRevenue.toFixed(0)}</span>
+                </div>
+                <div class="metric">
+                    <span>Avg Ticket Size</span>
+                    <span class="metric-value">NPR ${avgTicketSize.toFixed(0)}</span>
+                </div>
+                <div class="metric">
+                    <span>Avg Revenue/Driver</span>
+                    <span class="metric-value">NPR ${revenuePerDriver.toFixed(0)}</span>
+                </div>
+                <div class="metric">
                     <span>Avg Distance</span>
                     <span class="metric-value">${avgDistance.toFixed(1)} km</span>
                 </div>
@@ -1431,6 +1624,149 @@
             `;
             
             document.getElementById('keyMetrics').innerHTML = html;
+        }
+        
+        function generateCalendarView() {
+            const container = document.getElementById('calendarView');
+            
+            // Find the earliest date in the dataset
+            let minDate = null;
+            let maxDate = null;
+            
+            originalData.forEach(row => {
+                if (row['Pickup date']) {
+                    const pickupDate = parseDDMMYYYY(row['Pickup date']);
+                    if (pickupDate && !isNaN(pickupDate)) {
+                        if (!minDate || pickupDate < minDate) {
+                            minDate = pickupDate;
+                        }
+                        if (!maxDate || pickupDate > maxDate) {
+                            maxDate = pickupDate;
+                        }
+                    }
+                }
+            });
+            
+            if (!minDate || !maxDate) {
+                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-light);">No valid dates found in dataset.</div>';
+                return;
+            }
+            
+            // Create array of all dates from min to max
+            const allDates = [];
+            const currentDate = new Date(minDate);
+            while (currentDate <= maxDate) {
+                allDates.push(new Date(currentDate));
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            // Get unique drivers from original data, then filter by selected drivers
+            let drivers = [...new Set(originalData.map(row => row['Driver']))].filter(Boolean);
+            
+            // Apply driver filter if any drivers are selected
+            if (selectedDrivers.length > 0) {
+                drivers = drivers.filter(driver => selectedDrivers.includes(driver));
+            }
+            
+            // Sort drivers based on selected option
+            const sortOption = document.getElementById('calendarSort').value;
+            if (sortOption === 'alphabetical') {
+                drivers.sort();
+            } else {
+                // Sort by total completed rides
+                const driverCompletedCount = {};
+                originalData.forEach(row => {
+                    if (row.Status === 'Completed' && row['Driver']) {
+                        driverCompletedCount[row['Driver']] = (driverCompletedCount[row['Driver']] || 0) + 1;
+                    }
+                });
+                drivers.sort((a, b) => (driverCompletedCount[b] || 0) - (driverCompletedCount[a] || 0));
+            }
+            
+            // Calculate daily completed trips for each driver
+            const driverDailyData = {};
+            drivers.forEach(driver => {
+                driverDailyData[driver] = {};
+                allDates.forEach(date => {
+                    const dateStr = date.toDateString();
+                    driverDailyData[driver][dateStr] = 0;
+                });
+            });
+            
+            // Populate with actual data (use originalData, not filteredData to show all dates)
+            originalData.forEach(row => {
+                if (row.Status === 'Completed' && row['Driver'] && row['Pickup date']) {
+                    const driver = row['Driver'];
+                    
+                    // Skip if driver filter is applied and this driver is not selected
+                    if (selectedDrivers.length > 0 && !selectedDrivers.includes(driver)) {
+                        return;
+                    }
+                    
+                    const pickupDate = parseDDMMYYYY(row['Pickup date']);
+                    if (pickupDate && !isNaN(pickupDate)) {
+                        const dateStr = pickupDate.toDateString();
+                        if (driverDailyData[driver] && driverDailyData[driver][dateStr] !== undefined) {
+                            driverDailyData[driver][dateStr]++;
+                        }
+                    }
+                }
+            });
+            
+            // If no drivers match the filter, show message
+            if (drivers.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-light);">No drivers selected or found matching the current filter.</div>';
+                return;
+            }
+            
+            // Create table HTML
+            let html = '<table class="calendar-table"><thead><tr>';
+            html += '<th class="driver-header">Driver</th>';
+            
+            allDates.forEach(date => {
+                const dayName = date.toLocaleDateString('en', { weekday: 'short' });
+                const dayNum = date.getDate();
+                const monthName = date.toLocaleDateString('en', { month: 'short' });
+                
+                html += `<th class="date-header" title="${date.toLocaleDateString()}">
+                    <div>${dayName}</div>
+                    <div style="font-weight: 400; font-size: 0.7rem;">${dayNum} ${monthName}</div>
+                </th>`;
+            });
+            
+            html += '</tr></thead><tbody>';
+            
+            // Add driver rows (show all filtered drivers)
+            drivers.forEach(driver => {
+                html += '<tr>';
+                html += `<td class="driver-name">${driver}</td>`;
+                
+                allDates.forEach(date => {
+                    const dateStr = date.toDateString();
+                    const trips = driverDailyData[driver][dateStr];
+                    
+                    let cellClass = 'calendar-cell';
+                    if (trips === 0) {
+                        cellClass += ' no-data';
+                    } else if (trips <= 5) {
+                        cellClass += ' low-trips';
+                    } else if (trips <= 15) {
+                        cellClass += ' medium-trips';
+                    } else if (trips < 25) {
+                        cellClass += ' high-trips';
+                    } else {
+                        cellClass += ' very-high-trips';
+                    }
+                    
+                    const displayValue = trips === 0 ? '-' : trips;
+                    html += `<td class="${cellClass}" title="${driver}: ${trips} completed trips on ${date.toLocaleDateString()}">${displayValue}</td>`;
+                });
+                
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
         }
         
         function generateDriverTable() {
