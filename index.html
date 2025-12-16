@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ridesharing Analytics Dashboard</title>
+    <title>Ridesharing Analytics Dashboard - Enhanced</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
     <style>
-        /* Import Modern Font - Inter */
+        /* Import Fonts */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
         * {
             margin: 0;
@@ -41,7 +44,7 @@
         }
         
         .header {
-            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255,255,255,0.2);
             color: var(--white);
@@ -57,6 +60,17 @@
             font-weight: 800;
             margin-bottom: 0.5rem;
             text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .current-time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            display: inline-block;
         }
         
         .file-input {
@@ -105,6 +119,7 @@
             border-radius: 20px;
             box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
             transition: all 0.3s ease;
+            position: relative;
         }
         
         .card:hover {
@@ -113,11 +128,23 @@
         }
         
         .card h3 {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             color: var(--text-dark);
             font-size: 1.3rem;
             font-weight: 700;
             text-shadow: none;
+        }
+        
+        .chart-timestamp {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--text-light);
+            background: rgba(108, 117, 125, 0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
         }
         
         .metric {
@@ -267,6 +294,7 @@
             border-radius: 20px;
             margin-bottom: 2rem;
             box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            position: relative;
         }
         
         .filter-section h3 {
@@ -332,10 +360,7 @@
         }
         
         .multiselect-dropdown {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
+            position: fixed;
             background: var(--white);
             backdrop-filter: blur(20px);
             border: 2px solid rgba(0, 0, 0, 0.1);
@@ -345,7 +370,6 @@
             z-index: 9999;
             display: none;
             box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
-            margin-top: 4px;
         }
         
         .multiselect-dropdown.open {
@@ -375,109 +399,6 @@
             margin: 0;
             accent-color: var(--primary-red);
         }
-        
-        /* Calendar View Styles */
-        .calendar-view {
-            grid-column: 1 / -1;
-            width: 100%;
-        }
-        
-        .calendar-container {
-            overflow-x: auto;
-            background: var(--white);
-            border-radius: 12px;
-            border: 1px solid rgba(0,0,0,0.05);
-            margin: 0;
-            padding: 0;
-        }
-        
-        .calendar-table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 800px;
-            margin: 0;
-        }
-        
-        .calendar-table th,
-        .calendar-table td {
-            padding: 12px 8px;
-            text-align: center;
-            border: 1px solid rgba(0,0,0,0.1);
-            font-size: 0.9rem;
-        }
-        
-        .calendar-table th {
-            background: var(--light-gray);
-            font-weight: 700;
-            color: var(--text-dark);
-            position: sticky;
-            left: 0;
-            z-index: 10;
-            min-width: 120px;
-        }
-        
-        .calendar-table th.date-header {
-            background: var(--light-gray);
-            position: static;
-            min-width: 60px;
-        }
-        
-        .calendar-table td.driver-name {
-            background: var(--light-gray);
-            font-weight: 600;
-            text-align: left;
-            position: sticky;
-            left: 0;
-            z-index: 5;
-            border-right: 2px solid rgba(0,0,0,0.2);
-        }
-        
-        .calendar-cell {
-            position: relative;
-            font-weight: 600;
-        }
-        
-        .calendar-cell.no-data {
-            background: #f8f9fa;
-            color: #999;
-        }
-        
-        .calendar-cell.low-trips {
-            background: #ffe6e6;
-            color: #d63031;
-        }
-        
-        .calendar-cell.medium-trips {
-            background: #fff3cd;
-            color: #e17055;
-        }
-        
-        .calendar-cell.high-trips {
-            background: #d4edda;
-            color: var(--primary-green);
-        }
-        
-        .calendar-cell.very-high-trips {
-            background: #c8e6c9;
-            color: var(--primary-green);
-            font-weight: 800;
-        }
-        
-        @media (max-width: 768px) {
-            .calendar-table th,
-            .calendar-table td {
-                padding: 6px 4px;
-                font-size: 0.75rem;
-            }
-            
-            .calendar-table th {
-                min-width: 100px;
-            }
-            
-            .calendar-table th.date-header {
-                min-width: 50px;
-            }
-        }
     </style>
 </head>
 <body>
@@ -485,6 +406,8 @@
         <div class="header">
             <h1>🚗 Ridesharing Analytics Dashboard</h1>
             <p>Upload your CSV file to analyze ride data, driver performance, and business metrics</p>
+            
+            <div class="current-time" id="currentTime"></div>
             
             <div class="file-input" style="margin-top: 2rem;">
                 <label for="csvFile">📁 Choose CSV File</label>
@@ -502,6 +425,7 @@
             
             <!-- Filters -->
             <div class="filter-section">
+                <div class="chart-timestamp" id="filterTime"></div>
                 <h3>🔍 Filters</h3>
                 <div class="filter-grid">
                     <div class="filter-group">
@@ -536,6 +460,7 @@
             <div class="analytics-grid">
                 <!-- Status Overview -->
                 <div class="card">
+                    <div class="chart-timestamp" id="statusChartTime"></div>
                     <h3>📊 Ride Status Overview</h3>
                     <div class="chart-container">
                         <canvas id="statusChart"></canvas>
@@ -544,6 +469,7 @@
                 
                 <!-- Driver Performance -->
                 <div class="card">
+                    <div class="chart-timestamp" id="driverChartTime"></div>
                     <h3>👨‍💼 Top Drivers by Completed Rides</h3>
                     <div class="chart-container">
                         <canvas id="driverChart"></canvas>
@@ -552,6 +478,7 @@
                 
                 <!-- Driver Cumulative Performance -->
                 <div class="card">
+                    <div class="chart-timestamp" id="driverCumulativeChartTime"></div>
                     <h3>📈 Driver Daily Cumulative Completed Rides</h3>
                     <div class="chart-container">
                         <canvas id="driverCumulativeChart"></canvas>
@@ -560,6 +487,7 @@
                 
                 <!-- Hourly Distribution -->
                 <div class="card">
+                    <div class="chart-timestamp" id="hourlyChartTime"></div>
                     <h3>🕐 Rides by Hour</h3>
                     <div class="chart-container">
                         <canvas id="hourlyChart"></canvas>
@@ -568,12 +496,14 @@
                 
                 <!-- Cancellation Reasons -->
                 <div class="card">
+                    <div class="chart-timestamp" id="cancellationChartTime"></div>
                     <h3>❌ Cancellation Reasons</h3>
                     <div id="cancellationReasons"></div>
                 </div>
                 
                 <!-- Key Metrics -->
                 <div class="card">
+                    <div class="chart-timestamp" id="metricsChartTime"></div>
                     <h3>📈 Key Metrics</h3>
                     <div id="keyMetrics"></div>
                 </div>
@@ -581,6 +511,7 @@
             
             <!-- Driver Performance Table -->
             <div class="card">
+                <div class="chart-timestamp" id="driverTableTime"></div>
                 <h3>👥 Driver Performance Details</h3>
                 <div class="table-container">
                     <table id="driverTable">
@@ -600,15 +531,9 @@
                 </div>
             </div>
             
-            <!-- Calendar View -->
-            <div class="card calendar-view">
-                <h3>📅 Driver Performance Matrix - Full Dataset</h3>
-                <p style="color: var(--text-light); margin-bottom: 1.5rem; font-style: italic;">Daily completed trips for each driver (0-30+) from dataset start to end</p>
-                <div id="calendarView" class="calendar-container"></div>
-            </div>
-            
             <!-- Recent Rides -->
             <div class="card">
+                <div class="chart-timestamp" id="recentRidesTime"></div>
                 <h3>🔄 Recent Rides</h3>
                 <div class="table-container">
                     <table id="recentRides">
@@ -631,39 +556,122 @@
     </div>
 
     <script>
+        // Register the datalabels plugin
+        Chart.register(ChartDataLabels);
+        
         let originalData = [];
         let filteredData = [];
         let charts = {};
         let selectedStatuses = [];
         let selectedDrivers = [];
         
-        // Initialize upload handlers
-        document.getElementById('csvFile').addEventListener('change', handleFileUpload);
-        
-        const headerSection = document.querySelector('.header');
-        headerSection.addEventListener('dragover', handleDragOver);
-        headerSection.addEventListener('drop', handleDrop);
-        headerSection.addEventListener('dragleave', handleDragLeave);
-        
-        // Filter handlers  
-        document.getElementById('dateFilter').addEventListener('change', applyFilters);
-        
-        // Multiselect handlers
-        document.getElementById('statusFilter').addEventListener('click', () => toggleDropdown('statusDropdown'));
-        document.getElementById('driverFilter').addEventListener('click', () => toggleDropdown('driverDropdown'));
-        
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.multiselect-container')) {
-                document.querySelectorAll('.multiselect-dropdown').forEach(dropdown => {
-                    dropdown.classList.remove('open');
-                });
+        // Initialize timestamp updates
+        function updateTimestamps() {
+            const now = new Date();
+            const timestamp = now.toLocaleString('en-GB', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            
+            // Update main timestamp
+            const currentTimeElement = document.getElementById('currentTime');
+            if (currentTimeElement) {
+                currentTimeElement.textContent = `Last Updated: ${timestamp}`;
             }
+            
+            // Update all chart timestamps
+            const chartTimestamps = [
+                'filterTime',
+                'statusChartTime',
+                'driverChartTime', 
+                'driverCumulativeChartTime',
+                'hourlyChartTime',
+                'cancellationChartTime',
+                'metricsChartTime',
+                'driverTableTime',
+                'recentRidesTime'
+            ];
+            
+            chartTimestamps.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = `Generated: ${timestamp}`;
+                }
+            });
+        }
+
+        // Initialize upload handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('csvFile').addEventListener('change', handleFileUpload);
+            
+            const headerSection = document.querySelector('.header');
+            headerSection.addEventListener('dragover', handleDragOver);
+            headerSection.addEventListener('drop', handleDrop);
+            headerSection.addEventListener('dragleave', handleDragLeave);
+            
+            // Filter handlers  
+            document.getElementById('dateFilter').addEventListener('change', applyFilters);
+            
+            // Multiselect handlers
+            document.getElementById('statusFilter').addEventListener('click', () => toggleDropdown('statusDropdown'));
+            document.getElementById('driverFilter').addEventListener('click', () => toggleDropdown('driverDropdown'));
+            
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.multiselect-container')) {
+                    document.querySelectorAll('.multiselect-dropdown').forEach(dropdown => {
+                        dropdown.classList.remove('open');
+                    });
+                }
+            });
+            
+            // Reposition dropdowns on window resize
+            window.addEventListener('resize', () => {
+                document.querySelectorAll('.multiselect-dropdown.open').forEach(dropdown => {
+                    const container = dropdown.closest('.multiselect-container');
+                    if (container) {
+                        const trigger = container.querySelector('.multiselect');
+                        const rect = trigger.getBoundingClientRect();
+                        
+                        dropdown.style.top = `${rect.bottom + 8}px`;
+                        dropdown.style.left = `${rect.left}px`;
+                        dropdown.style.width = `${rect.width}px`;
+                    }
+                });
+            });
+            
+            // Initialize timestamps
+            updateTimestamps();
+            setInterval(updateTimestamps, 1000); // Update every second
         });
-        
+
         function toggleDropdown(dropdownId) {
             const dropdown = document.getElementById(dropdownId);
-            dropdown.classList.toggle('open');
+            const isOpen = dropdown.classList.contains('open');
+            
+            // Close all other dropdowns first
+            document.querySelectorAll('.multiselect-dropdown').forEach(d => {
+                d.classList.remove('open');
+            });
+            
+            if (!isOpen) {
+                // Get the trigger element (parent container)
+                const container = dropdown.closest('.multiselect-container');
+                const trigger = container.querySelector('.multiselect');
+                const rect = trigger.getBoundingClientRect();
+                
+                // Position the dropdown
+                dropdown.style.top = `${rect.bottom + 8}px`;
+                dropdown.style.left = `${rect.left}px`;
+                dropdown.style.width = `${rect.width}px`;
+                
+                dropdown.classList.add('open');
+            }
         }
         
         function createMultiselect(containerId, dropdownId, options, selectedArray, placeholder) {
@@ -774,12 +782,12 @@
         
         function handleDragLeave(e) {
             e.preventDefault();
-            document.querySelector('.header').style.background = 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)';
+            document.querySelector('.header').style.background = 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)';
         }
         
         function handleDrop(e) {
             e.preventDefault();
-            document.querySelector('.header').style.background = 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)';
+            document.querySelector('.header').style.background = 'linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 100%)';
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 processFile(files[0]);
@@ -827,6 +835,9 @@
             applyFilters(); // This will apply today filter and generate analytics
             
             document.getElementById('analytics').classList.remove('hidden');
+            
+            // Update timestamps after loading data
+            updateTimestamps();
         }
         
         function populateFilters() {
@@ -884,6 +895,7 @@
             });
             
             generateAnalytics();
+            updateTimestamps();
         }
         
         function generateAnalytics() {
@@ -894,7 +906,6 @@
             generateHourlyChart();
             generateCancellationReasons();
             generateKeyMetrics();
-            generateCalendarView();
             generateDriverTable();
             generateRecentRides();
         }
@@ -982,7 +993,7 @@
                     datasets: [{
                         data: Object.values(statusCounts),
                         backgroundColor: Object.keys(statusCounts).map(status => colors[status] || '#64748b'),
-                        borderWidth: 2,
+                        borderWidth: 3,
                         borderColor: '#fff'
                     }]
                 },
@@ -991,7 +1002,40 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: 'Poppins',
+                                    size: 13,
+                                    weight: '600'
+                                },
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        },
+                        datalabels: {
+                            display: true,
+                            color: '#FFFFFF',
+                            font: {
+                                family: 'JetBrains Mono',
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            formatter: (value, context) => {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(0);
+                                return `${value}\n(${percentage}%)`;
+                            }
                         }
                     }
                 }
@@ -1023,7 +1067,8 @@
                         label: 'Completed Rides',
                         data: sortedDrivers.map(([,count]) => count),
                         backgroundColor: '#E31E24',
-                        borderRadius: 4
+                        borderRadius: 6,
+                        borderSkipped: false,
                     }]
                 },
                 options: {
@@ -1032,16 +1077,43 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        datalabels: {
+                            display: true,
+                            color: '#FFFFFF',
+                            font: {
+                                family: 'JetBrains Mono',
+                                size: 12,
+                                weight: 'bold'
+                            },
+                            anchor: 'center',
+                            align: 'center',
+                            formatter: (value) => value > 0 ? value.toString() : ''
                         }
                     },
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'JetBrains Mono'
+                                }
+                            }
                         },
                         x: {
                             ticks: {
                                 maxRotation: 45,
-                                minRotation: 45
+                                minRotation: 45,
+                                font: {
+                                    family: 'Poppins',
+                                    weight: '500'
+                                }
+                            },
+                            grid: {
+                                display: false
                             }
                         }
                     }
@@ -1096,13 +1168,18 @@
                 }
                 
                 datasets.push({
-                    label: driver, // Full name instead of first name only
+                    label: driver,
                     data: cumulativeData,
                     borderColor: colors[index % colors.length],
-                    backgroundColor: colors[index % colors.length] + '20',
-                    borderWidth: 3,
+                    backgroundColor: colors[index % colors.length] + '30',
+                    borderWidth: 4,
                     fill: false,
-                    tension: 0.1
+                    tension: 0.2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: colors[index % colors.length],
+                    pointBorderColor: '#FFFFFF',
+                    pointBorderWidth: 2
                 });
             });
             
@@ -1117,7 +1194,20 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            position: 'bottom'
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    family: 'Poppins',
+                                    size: 12,
+                                    weight: '600'
+                                },
+                                padding: 15,
+                                usePointStyle: true,
+                                pointStyle: 'line'
+                            }
+                        },
+                        datalabels: {
+                            display: false // Too cluttered for line charts
                         }
                     },
                     scales: {
@@ -1125,15 +1215,43 @@
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Cumulative Completed Rides'
+                                text: 'Cumulative Completed Rides',
+                                font: {
+                                    family: 'Poppins',
+                                    weight: '600'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'JetBrains Mono'
+                                }
                             }
                         },
                         x: {
                             title: {
                                 display: true,
-                                text: 'Hour of Day'
+                                text: 'Hour of Day',
+                                font: {
+                                    family: 'Poppins',
+                                    weight: '600'
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'JetBrains Mono'
+                                }
                             }
                         }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
                     }
                 }
             });
@@ -1166,10 +1284,15 @@
                         label: 'Rides',
                         data: hourCounts,
                         borderColor: '#E31E24',
-                        backgroundColor: 'rgba(227, 30, 36, 0.1)',
-                        borderWidth: 3,
+                        backgroundColor: 'rgba(227, 30, 36, 0.15)',
+                        borderWidth: 4,
                         fill: true,
-                        tension: 0.4
+                        tension: 0.4,
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: '#E31E24',
+                        pointBorderColor: '#FFFFFF',
+                        pointBorderWidth: 2
                     }]
                 },
                 options: {
@@ -1178,11 +1301,41 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        datalabels: {
+                            display: true,
+                            color: '#E31E24',
+                            font: {
+                                family: 'JetBrains Mono',
+                                size: 10,
+                                weight: 'bold'
+                            },
+                            align: 'top',
+                            offset: 4,
+                            formatter: (value) => value > 0 ? value.toString() : ''
                         }
                     },
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'JetBrains Mono'
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0,0,0,0.05)'
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'JetBrains Mono'
+                                }
+                            }
                         }
                     }
                 }
@@ -1278,134 +1431,6 @@
             `;
             
             document.getElementById('keyMetrics').innerHTML = html;
-        }
-        
-        function generateCalendarView() {
-            const container = document.getElementById('calendarView');
-            
-            // Find the earliest date in the dataset
-            let minDate = null;
-            let maxDate = null;
-            
-            originalData.forEach(row => {
-                if (row['Pickup date']) {
-                    const pickupDate = parseDDMMYYYY(row['Pickup date']);
-                    if (pickupDate && !isNaN(pickupDate)) {
-                        if (!minDate || pickupDate < minDate) {
-                            minDate = pickupDate;
-                        }
-                        if (!maxDate || pickupDate > maxDate) {
-                            maxDate = pickupDate;
-                        }
-                    }
-                }
-            });
-            
-            if (!minDate || !maxDate) {
-                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-light);">No valid dates found in dataset.</div>';
-                return;
-            }
-            
-            // Create array of all dates from min to max
-            const allDates = [];
-            const currentDate = new Date(minDate);
-            while (currentDate <= maxDate) {
-                allDates.push(new Date(currentDate));
-                currentDate.setDate(currentDate.getDate() + 1);
-            }
-            
-            // Get unique drivers from original data, then filter by selected drivers
-            let drivers = [...new Set(originalData.map(row => row['Driver']))].filter(Boolean).sort();
-            
-            // Apply driver filter if any drivers are selected
-            if (selectedDrivers.length > 0) {
-                drivers = drivers.filter(driver => selectedDrivers.includes(driver));
-            }
-            
-            // Calculate daily completed trips for each driver
-            const driverDailyData = {};
-            drivers.forEach(driver => {
-                driverDailyData[driver] = {};
-                allDates.forEach(date => {
-                    const dateStr = date.toDateString();
-                    driverDailyData[driver][dateStr] = 0;
-                });
-            });
-            
-            // Populate with actual data (use originalData, not filteredData to show all dates)
-            originalData.forEach(row => {
-                if (row.Status === 'Completed' && row['Driver'] && row['Pickup date']) {
-                    const driver = row['Driver'];
-                    
-                    // Skip if driver filter is applied and this driver is not selected
-                    if (selectedDrivers.length > 0 && !selectedDrivers.includes(driver)) {
-                        return;
-                    }
-                    
-                    const pickupDate = parseDDMMYYYY(row['Pickup date']);
-                    if (pickupDate && !isNaN(pickupDate)) {
-                        const dateStr = pickupDate.toDateString();
-                        if (driverDailyData[driver] && driverDailyData[driver][dateStr] !== undefined) {
-                            driverDailyData[driver][dateStr]++;
-                        }
-                    }
-                }
-            });
-            
-            // If no drivers match the filter, show message
-            if (drivers.length === 0) {
-                container.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-light);">No drivers selected or found matching the current filter.</div>';
-                return;
-            }
-            
-            // Create table HTML
-            let html = '<table class="calendar-table"><thead><tr>';
-            html += '<th class="driver-header">Driver</th>';
-            
-            allDates.forEach(date => {
-                const dayName = date.toLocaleDateString('en', { weekday: 'short' });
-                const dayNum = date.getDate();
-                const monthName = date.toLocaleDateString('en', { month: 'short' });
-                
-                html += `<th class="date-header" title="${date.toLocaleDateString()}">
-                    <div>${dayName}</div>
-                    <div style="font-weight: 400; font-size: 0.7rem;">${dayNum} ${monthName}</div>
-                </th>`;
-            });
-            
-            html += '</tr></thead><tbody>';
-            
-            // Add driver rows (show all filtered drivers)
-            drivers.forEach(driver => {
-                html += '<tr>';
-                html += `<td class="driver-name">${driver}</td>`;
-                
-                allDates.forEach(date => {
-                    const dateStr = date.toDateString();
-                    const trips = driverDailyData[driver][dateStr];
-                    
-                    let cellClass = 'calendar-cell';
-                    if (trips === 0) {
-                        cellClass += ' no-data';
-                    } else if (trips <= 3) {
-                        cellClass += ' low-trips';
-                    } else if (trips <= 7) {
-                        cellClass += ' medium-trips';
-                    } else if (trips <= 15) {
-                        cellClass += ' high-trips';
-                    } else {
-                        cellClass += ' very-high-trips';
-                    }
-                    
-                    const displayValue = trips === 0 ? '-' : trips;
-                    html += `<td class="${cellClass}" title="${driver}: ${trips} completed trips on ${date.toLocaleDateString()}">${displayValue}</td>`;
-                });
-                
-                html += '</tr>';
-            });
-            
-            html += '</tbody></table>';
-            container.innerHTML = html;
         }
         
         function generateDriverTable() {
