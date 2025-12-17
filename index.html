@@ -545,6 +545,13 @@
         </div>
         
         <div id="analytics" class="hidden">
+            <!-- Date Range Display -->
+            <div class="card" style="margin-bottom: 1rem; padding: 1rem 2rem; text-align: center;">
+                <div class="chart-timestamp" id="dateRangeTime"></div>
+                <h3 style="margin-bottom: 0.5rem;">📅 Dataset Date Range</h3>
+                <p id="dateRange" style="font-family: 'JetBrains Mono', monospace; font-size: 1.1rem; color: var(--text-dark); margin: 0;"></p>
+            </div>
+            
             <!-- Summary Statistics -->
             <div class="summary-stats" id="summaryStats"></div>
             
@@ -670,28 +677,6 @@
                     </table>
                 </div>
             </div>
-            
-            <!-- Recent Rides -->
-            <div class="card">
-                <div class="chart-timestamp" id="recentRidesTime"></div>
-                <h3>🔄 Recent Rides</h3>
-                <div class="table-container">
-                    <table id="recentRides">
-                        <thead>
-                            <tr>
-                                <th class="sortable">Order</th>
-                                <th class="sortable">Driver</th>
-                                <th class="sortable">Status</th>
-                                <th class="sortable">Service</th>
-                                <th class="sortable">Date</th>
-                                <th class="sortable">Route</th>
-                                <th class="sortable">Distance</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -726,6 +711,7 @@
             
             // Update all chart timestamps
             const chartTimestamps = [
+                'dateRangeTime',
                 'filterTime',
                 'statusChartTime',
                 'driverChartTime', 
@@ -734,8 +720,7 @@
                 'cancellationChartTime',
                 'metricsChartTime',
                 'calendarChartTime',
-                'driverTableTime',
-                'recentRidesTime'
+                'driverTableTime'
             ];
             
             chartTimestamps.forEach(id => {
@@ -926,6 +911,21 @@
             return isNaN(parsed) ? 0 : parsed;
         }
         
+        function formatDriverName(fullName) {
+            if (!fullName || typeof fullName !== 'string') return fullName;
+            
+            // Split by space and filter out empty strings
+            const parts = fullName.trim().split(/\s+/).filter(Boolean);
+            
+            if (parts.length <= 1) return fullName;
+            
+            // Take last part as last name, everything else as first/middle names
+            const lastName = parts[parts.length - 1];
+            const firstMiddleNames = parts.slice(0, -1);
+            
+            return [...firstMiddleNames, lastName].join(' ');
+        }
+        
         function handleDragOver(e) {
             e.preventDefault();
             document.querySelector('.header').style.background = 'linear-gradient(135deg, rgba(227, 30, 36, 0.2) 0%, rgba(227, 30, 36, 0.1) 100%)';
@@ -996,8 +996,8 @@
             const statuses = [...new Set(originalData.map(row => row.Status))].filter(Boolean);
             createMultiselect('statusFilter', 'statusDropdown', statuses, selectedStatuses, 'Select Status...');
             
-            // Driver multiselect - sorted alphabetically
-            const drivers = [...new Set(originalData.map(row => row['Driver']))].filter(Boolean).sort();
+            // Driver multiselect - sorted alphabetically with formatted names
+            const drivers = [...new Set(originalData.map(row => formatDriverName(row['Driver'])))].filter(Boolean).sort();
             createMultiselect('driverFilter', 'driverDropdown', drivers.slice(0, 20), selectedDrivers, 'Select Drivers...');
         }
         
@@ -1008,8 +1008,8 @@
                 // Status filter (multiselect)
                 if (selectedStatuses.length > 0 && !selectedStatuses.includes(row.Status)) return false;
                 
-                // Driver filter (multiselect) 
-                if (selectedDrivers.length > 0 && !selectedDrivers.includes(row['Driver'])) return false;
+                // Driver filter (multiselect) - compare formatted names
+                if (selectedDrivers.length > 0 && !selectedDrivers.includes(formatDriverName(row['Driver']))) return false;
                 
                 if (dateFilter) {
                     const pickupDate = parseDDMMYYYY(row['Pickup date']);
@@ -1050,6 +1050,7 @@
         }
         
         function generateAnalytics() {
+            generateDateRange();
             generateSummaryStats();
             generateStatusChart();
             generateDriverChart();
@@ -1059,7 +1060,47 @@
             generateKeyMetrics();
             generateCalendarView();
             generateDriverTable();
-            generateRecentRides();
+        }
+        
+        function generateDateRange() {
+            let minDate = null;
+            let maxDate = null;
+            
+            originalData.forEach(row => {
+                if (row['Pickup date']) {
+                    const pickupDate = parseDDMMYYYY(row['Pickup date']);
+                    if (pickupDate && !isNaN(pickupDate)) {
+                        if (!minDate || pickupDate < minDate) {
+                            minDate = pickupDate;
+                        }
+                        if (!maxDate || pickupDate > maxDate) {
+                            maxDate = pickupDate;
+                        }
+                    }
+                }
+            });
+            
+            const dateRangeElement = document.getElementById('dateRange');
+            if (minDate && maxDate) {
+                const formatDate = (date) => {
+                    return date.toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit', 
+                        year: 'numeric'
+                    });
+                };
+                
+                const formatTime = (date) => {
+                    return date.toLocaleTimeString('en-GB', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                };
+                
+                dateRangeElement.innerHTML = `From: ${formatDate(minDate)} ${formatTime(minDate)} → To: ${formatDate(maxDate)} ${formatTime(maxDate)}`;
+            } else {
+                dateRangeElement.innerHTML = 'No valid dates found in dataset';
+            }
         }
         
         function generateSummaryStats() {
@@ -1079,7 +1120,7 @@
             
             const avgDistance = completed > 0 ? (totalDistance / completed) / 1000 : 0;
             
-            const uniqueDrivers = new Set(filteredData.map(r => r['Driver'])).size;
+            const uniqueDrivers = new Set(filteredData.map(r => formatDriverName(r['Driver']))).size;
             
             // Format total distance properly
             const totalKm = Math.round(totalDistance / 1000);
@@ -1219,7 +1260,7 @@
             
             const driverCounts = {};
             filteredData.filter(r => r.Status === 'Completed').forEach(row => {
-                const driver = row['Driver'] || 'Unknown';
+                const driver = formatDriverName(row['Driver']) || 'Unknown';
                 driverCounts[driver] = (driverCounts[driver] || 0) + 1;
             });
             
@@ -1299,7 +1340,7 @@
             // Get top 5 drivers by completed rides
             const driverCompletedCount = {};
             filteredData.filter(r => r.Status === 'Completed').forEach(row => {
-                const driver = row['Driver'] || 'Unknown';
+                const driver = formatDriverName(row['Driver']) || 'Unknown';
                 driverCompletedCount[driver] = (driverCompletedCount[driver] || 0) + 1;
             });
             
@@ -1321,7 +1362,7 @@
             
             topDrivers.forEach((driver, index) => {
                 const driverRides = filteredData
-                    .filter(r => r.Status === 'Completed' && r['Driver'] === driver && r['Completion date'])
+                    .filter(r => r.Status === 'Completed' && formatDriverName(r['Driver']) === driver && r['Completion date'])
                     .map(r => {
                         const completionDate = parseDDMMYYYY(r['Completion date']);
                         return { 
@@ -1549,7 +1590,7 @@
             const revenuePerDriver = (() => {
                 const driverRevenue = {};
                 completed.forEach(r => {
-                    const driver = r['Driver'] || 'Unknown';
+                    const driver = formatDriverName(r['Driver']) || 'Unknown';
                     driverRevenue[driver] = (driverRevenue[driver] || 0) + parseRevenue(r['Fare in Yango Pro']);
                 });
                 const revenues = Object.values(driverRevenue);
@@ -1570,7 +1611,7 @@
                         return sum;
                     }, 0) / completed.filter(r => r['Pickup date'] && r['Completion date']).length / (1000 * 60) : 0;
             
-            const uniqueDrivers = new Set(filteredData.map(r => r['Driver'])).size;
+            const uniqueDrivers = new Set(filteredData.map(r => formatDriverName(r['Driver']))).size;
             
             // Calculate average rides per driver
             const avgRidesPerDriver = uniqueDrivers > 0 ? (filteredData.length / uniqueDrivers).toFixed(1) : 0;
@@ -1667,7 +1708,7 @@
             }
             
             // Get unique drivers from original data, then filter by selected drivers
-            let drivers = [...new Set(originalData.map(row => row['Driver']))].filter(Boolean);
+            let drivers = [...new Set(originalData.map(row => formatDriverName(row['Driver'])))].filter(Boolean);
             
             // Apply driver filter if any drivers are selected
             if (selectedDrivers.length > 0) {
@@ -1683,7 +1724,8 @@
                 const driverCompletedCount = {};
                 originalData.forEach(row => {
                     if (row.Status === 'Completed' && row['Driver']) {
-                        driverCompletedCount[row['Driver']] = (driverCompletedCount[row['Driver']] || 0) + 1;
+                        const formattedName = formatDriverName(row['Driver']);
+                        driverCompletedCount[formattedName] = (driverCompletedCount[formattedName] || 0) + 1;
                     }
                 });
                 drivers.sort((a, b) => (driverCompletedCount[b] || 0) - (driverCompletedCount[a] || 0));
@@ -1702,7 +1744,7 @@
             // Populate with actual data (use originalData, not filteredData to show all dates)
             originalData.forEach(row => {
                 if (row.Status === 'Completed' && row['Driver'] && row['Pickup date']) {
-                    const driver = row['Driver'];
+                    const driver = formatDriverName(row['Driver']);
                     
                     // Skip if driver filter is applied and this driver is not selected
                     if (selectedDrivers.length > 0 && !selectedDrivers.includes(driver)) {
@@ -1754,12 +1796,10 @@
                     let cellClass = 'calendar-cell';
                     if (trips === 0) {
                         cellClass += ' no-data';
-                    } else if (trips <= 5) {
+                    } else if (trips < 10) {
                         cellClass += ' low-trips';
-                    } else if (trips <= 15) {
-                        cellClass += ' medium-trips';
                     } else if (trips < 25) {
-                        cellClass += ' high-trips';
+                        cellClass += ' medium-trips';
                     } else {
                         cellClass += ' very-high-trips';
                     }
@@ -1779,7 +1819,7 @@
             const driverStats = {};
             
             filteredData.forEach(row => {
-                const driver = row['Driver'] || 'Unknown';
+                const driver = formatDriverName(row['Driver']) || 'Unknown';
                 if (!driverStats[driver]) {
                     driverStats[driver] = {
                         total: 0,
@@ -1832,42 +1872,6 @@
             
             // Add sorting to table
             addTableSorting('driverTable');
-        }
-        
-        function generateRecentRides() {
-            const recentRides = filteredData
-                .filter(r => r['Pickup date'])
-                .map(r => ({
-                    ...r,
-                    parsedDate: parseDDMMYYYY(r['Pickup date'])
-                }))
-                .filter(r => r.parsedDate && !isNaN(r.parsedDate))
-                .sort((a, b) => b.parsedDate - a.parsedDate)
-                .slice(0, 20);
-            
-            const tbody = document.querySelector('#recentRides tbody');
-            tbody.innerHTML = recentRides.map(ride => {
-                const dateStr = formatDateDDMMYYYY(ride['Pickup date']);
-                const timeStr = formatTime(ride['Pickup date']);
-                const dateTime = `${dateStr} ${timeStr}`;
-                const distance = parseFloat(ride['Mileage, km']?.replace(',', '.') || 0) / 1000;
-                const route = ride['Address'] || 'N/A';
-                
-                return `
-                    <tr>
-                        <td data-sort="${ride['Order code'] || ''}">${ride['Order code'] || 'N/A'}</td>
-                        <td data-sort="${ride['Driver'] || ''}">${ride['Driver'] || 'N/A'}</td>
-                        <td data-sort="${ride.Status}"><span class="status-${ride.Status ? ride.Status.toLowerCase() : 'unknown'}">${ride.Status}</span></td>
-                        <td data-sort="${ride['Service class'] || ''}">${ride['Service class'] || 'N/A'}</td>
-                        <td data-sort="${ride.parsedDate.getTime()}">${dateTime}</td>
-                        <td data-sort="${route}" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${route}</td>
-                        <td data-sort="${distance}">${distance.toFixed(1)} km</td>
-                    </tr>
-                `;
-            }).join('');
-            
-            // Add sorting to table
-            addTableSorting('recentRides');
         }
         
         function addTableSorting(tableId) {
