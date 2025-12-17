@@ -914,27 +914,16 @@
         function formatDriverName(fullName) {
             if (!fullName || typeof fullName !== 'string') return fullName;
             
-            // Handle specific name corrections first
-            const specificCorrections = {
-                'Yadav Om Kumar': 'Om Kumar Yadav',
-                'Adhikari Gokul': 'Gokul Adhikari',
-                'Pun Nar Bahadur Phagami': 'Nar Bahadur Phagami Pun'
-            };
-            
-            if (specificCorrections[fullName]) {
-                return specificCorrections[fullName];
-            }
-            
             // Split by space and filter out empty strings
             const parts = fullName.trim().split(/\s+/).filter(Boolean);
             
             if (parts.length <= 1) return fullName;
             
-            // Take last part as last name, everything else as first/middle names
-            const lastName = parts[parts.length - 1];
-            const firstMiddleNames = parts.slice(0, -1);
+            // Shift first part to end: [n0, n1, n2, n3] → [n1, n2, n3, n0]
+            const firstPart = parts[0];
+            const remainingParts = parts.slice(1);
             
-            return [...firstMiddleNames, lastName].join(' ');
+            return [...remainingParts, firstPart].join(' ');
         }
         
         function handleDragOver(e) {
