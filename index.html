@@ -914,6 +914,17 @@
         function formatDriverName(fullName) {
             if (!fullName || typeof fullName !== 'string') return fullName;
             
+            // Handle specific name corrections first
+            const specificCorrections = {
+                'Yadav Om Kumar': 'Om Kumar Yadav',
+                'Adhikari Gokul': 'Gokul Adhikari',
+                'Pun Nar Bahadur Phagami': 'Nar Bahadur Phagami Pun'
+            };
+            
+            if (specificCorrections[fullName]) {
+                return specificCorrections[fullName];
+            }
+            
             // Split by space and filter out empty strings
             const parts = fullName.trim().split(/\s+/).filter(Boolean);
             
