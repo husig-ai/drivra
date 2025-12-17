@@ -645,7 +645,7 @@
                         <option value="performance" selected>Total Completed Rides</option>
                     </select>
                 </div>
-                
+                <p style="color: var(--text-light); margin-bottom: 1.5rem; font-style: italic;">Daily completed trips for each driver (≥25 trips = green) from dataset start to end</p>
                 <div id="calendarView" class="calendar-container"></div>
             </div>
             
@@ -1308,19 +1308,20 @@
                 .slice(0, 5)
                 .map(([driver]) => driver);
             
-            // Create cumulative data for each driver throughout the day
-            const hours = Array.from({length: 24}, (_, i) => i);
+            // Get current hour to limit display
+            const currentHour = new Date().getHours();
+            const hours = Array.from({length: currentHour + 1}, (_, i) => i);
             const datasets = [];
             const colors = ['#E31E24', '#0A6846', '#1E3A5F', '#ea580c', '#0ea5e9'];
             
             topDrivers.forEach((driver, index) => {
                 const driverRides = filteredData
-                    .filter(r => r.Status === 'Completed' && r['Driver'] === driver && r['Pickup date'])
+                    .filter(r => r.Status === 'Completed' && r['Driver'] === driver && r['Completion date'])
                     .map(r => {
-                        const pickupDate = parseDDMMYYYY(r['Pickup date']);
+                        const completionDate = parseDDMMYYYY(r['Completion date']);
                         return { 
-                            hour: pickupDate ? pickupDate.getHours() : 0,
-                            date: pickupDate
+                            hour: completionDate ? completionDate.getHours() : 0,
+                            date: completionDate
                         };
                     })
                     .filter(r => r.date && !isNaN(r.date))
@@ -1329,7 +1330,7 @@
                 const cumulativeData = [];
                 let cumulative = 0;
                 
-                for (let hour = 0; hour < 24; hour++) {
+                for (let hour = 0; hour <= currentHour; hour++) {
                     const ridesInHour = driverRides.filter(r => r.hour === hour).length;
                     cumulative += ridesInHour;
                     cumulativeData.push(cumulative);
