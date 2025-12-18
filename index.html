@@ -998,7 +998,7 @@
             
             // Driver multiselect - sorted alphabetically with formatted names
             const drivers = [...new Set(originalData.map(row => formatDriverName(row['Driver'])))].filter(Boolean).sort();
-            createMultiselect('driverFilter', 'driverDropdown', drivers.slice(0, 20), selectedDrivers, 'Select Drivers...');
+            createMultiselect('driverFilter', 'driverDropdown', drivers.slice(0, 2000), selectedDrivers, 'Select Drivers...');
         }
         
         function applyFilters() {
@@ -1266,7 +1266,7 @@
             
             const sortedDrivers = Object.entries(driverCounts)
                 .sort(([,a], [,b]) => b - a)
-                .slice(0, 10);
+                .slice(0, 1000);
             
             charts.driver = new Chart(ctx, {
                 type: 'bar',
@@ -1346,7 +1346,7 @@
             
             const topDrivers = Object.entries(driverCompletedCount)
                 .sort(([,a], [,b]) => b - a)
-                .slice(0, 5)
+                .slice(0, 10)
                 .map(([driver]) => driver);
             
             // Check if we're viewing today's data
@@ -1850,7 +1850,7 @@
             
             const sortedDrivers = Object.entries(driverStats)
                 .sort(([,a], [,b]) => b.completed - a.completed)
-                .slice(0, 20);
+                .slice(0, 2000);
             
             const tbody = document.querySelector('#driverTable tbody');
             tbody.innerHTML = sortedDrivers.map(([driver, stats]) => {
